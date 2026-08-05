@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejamento Financeiro - Patrick</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { max-width: 950px; margin: 30px auto; padding: 0 20px; background: #f5f7fa; }
+        h1 { color: #2d3748; text-align: center; margin-bottom: 25px; }
+        .resumo { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        th, td { padding: 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #2b6cb0; color: white; font-weight: 600; }
+        .entrada { color: #2f855a; font-weight: bold; }
+        .saida { color: #c53030; font-weight: bold; }
+        .fixo { color: #2d3748; }
+        input { width: 150px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 16px; text-align: right; }
+        input:focus { outline: none; border-color: #2b6cb0; box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.2); }
+        .total { font-weight: bold; font-size: 17px; }
+        .resultado { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .sobra { font-size: 20px; font-weight: bold; margin: 10px 0; }
+        .positivo { color: #2f855a; }
+        .negativo { color: #c53030; }
+        .prazo { font-size: 18px; color: #2b6cb0; margin-top: 10px; }
+        .grafico-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<h1>📊 Planejamento Financeiro Personalizado</h1>
+
+<div class="resumo">
+    <p><strong>Valor total disponível para quitação:</strong> R$ 7.000,00</p>
+    <p><strong>Dívida total original:</strong> R$ 7.870,00</p>
+</div>
+
+<table id="tabela">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th style="width: 180px;">Valor Mensal (R$)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- ENTRADAS - VERDE -->
+        <tr>
+            <td class="entrada">Salário Líquido</td>
+            <td class="entrada"><input type="number" id="salario" value="4000.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="entrada">Outras Entradas / Saldo Extra</td>
+            <td class="entrada"><input type="number" id="outras_entradas" value="0.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+
+        <!-- SAÍDAS - VERMELHO / PRETO -->
+        <tr>
+            <td class="saida">Cartões (parcelado + assinaturas)</td>
+            <td class="saida"><input type="number" id="cartoes" value="452.33" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="saida">Parcela do Veículo</td>
+            <td class="saida"><input type="number" id="parcela_carro" value="1179.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="fixo">Seguro do Veículo</td>
+            <td class="fixo"><input type="number" id="seguro" value="90.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="saida">Contas Residenciais</td>
+            <td class="saida"><input type="number" id="contas" value="1169.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="saida">Gasolina</td>
+            <td class="saida"><input type="number" id="gasolina" value="240.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="saida">Lazer</td>
+            <td class="saida"><input type="number" id="lazer" value="500.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+        <tr>
+            <td class="saida">Gastos Não Previstos / Dívidas Extras</td>
+            <td class="saida"><input type="number" id="gastos_extras" value="0.00" step="0.01" oninput="calcular()"></td>
+        </tr>
+
+        <tr class="total">
+            <td>Total de Saídas</td>
+            <td id="total_saidas">R$ 0,00</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="resultado">
+    <div class="sobra">
+        Sobra mensal: <span id="valor_sobra">R$ 0,00</span>
+    </div>
+    <div class="prazo">
+        Prazo para devolver R$ 7.000,00 à reserva: <span id="prazo_meses">0</span> meses
+    </div>
+</div>
+
+<div class="grafico-container">
+    <canvas id="grafico"></canvas>
+</div>
+
+<script>
+let grafico;
+
+function calcular() {
+    // Pegar valores
+    const salario = parseFloat(document.getElementById('salario').value) || 0;
+    const outras_entradas = parseFloat(document.getElementById('outras_entradas').value) || 0;
+    const cartoes = parseFloat(document.getElementById('cartoes').value) || 0;
+    const parcela_carro = parseFloat(document.getElementById('parcela_carro').value) || 0;
+    const seguro = parseFloat(document.getElementById('seguro').value) || 0;
+    const contas = parseFloat(document.getElementById('contas').value) || 0;
+    const gasolina = parseFloat(document.getElementById('gasolina').value) || 0;
+    const lazer = parseFloat(document.getElementById('lazer').value) || 0;
+    const gastos_extras = parseFloat(document.getElementById('gastos_extras').value) || 0;
+    const valor_devolver = 7000;
+
+    // Cálculos
+    const total_entradas = salario + outras_entradas;
+    const total_saidas = cartoes + parcela_carro + seguro + contas + gasolina + lazer + gastos_extras;
+    const sobra = total_entradas - total_saidas;
+    const prazo = sobra > 0 ? Math.ceil(valor_devolver / sobra) : 'Indefinido';
+
+    // Exibir resultados
+    document.getElementById('total_saidas').textContent = `R$ ${total_saidas.toFixed(2).replace('.', ',')}`;
+    
+    const el_sobra = document.getElementById('valor_sobra');
+    el_sobra.textContent = `R$ ${sobra.toFixed(2).replace('.', ',')}`;
+    el_sobra.className = sobra >= 0 ? 'positivo' : 'negativo';
+
+    document.getElementById('prazo_meses').textContent = prazo;
+
+    // Atualizar gráfico
+    atualizarGrafico(total_entradas, total_saidas);
+}
+
+function atualizarGrafico(entrada, saida) {
+    const ctx = document.getElementById('grafico').getContext('2d');
+    
+    if (grafico) grafico.destroy();
+
+    grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Total Entradas', 'Total Saídas'],
+            datasets: [{
+                label: 'Valor Mensal (R$)',
+                data: [entrada, saida],
+                backgroundColor: ['#2f855a', '#c53030'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+// Executar ao abrir
+window.onload = calcular;
+</script>
+
+</body>
+</html>
