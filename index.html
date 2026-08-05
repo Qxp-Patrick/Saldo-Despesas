@@ -10,6 +10,7 @@
         body { max-width: 950px; margin: 30px auto; padding: 0 20px; background: #f5f7fa; }
         h1 { color: #2d3748; text-align: center; margin-bottom: 25px; }
         .resumo { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .aviso-salvo { font-size: 13px; color: #2f855a; margin-top: 5px; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
         th, td { padding: 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #2b6cb0; color: white; font-weight: 600; }
@@ -31,6 +32,11 @@
 
 <h1>📊 Planejamento Financeiro Personalizado</h1>
 
+<div class="resumo">
+    <p><strong>Valor total disponível para quitação:</strong> R$ 7.000,00</p>
+    <p><strong>Dívida total original:</strong> R$ 7.870,00</p>
+    <p class="aviso-salvo">✅ Valores salvos automaticamente no seu navegador</p>
+</div>
 
 <table id="tabela">
     <thead>
@@ -40,7 +46,6 @@
         </tr>
     </thead>
     <tbody>
-        <!-- ENTRADAS - VERDE -->
         <tr>
             <td class="entrada">Salário Líquido</td>
             <td class="entrada"><input type="number" id="salario" value="4000.00" step="0.01" oninput="calcular()"></td>
@@ -49,8 +54,6 @@
             <td class="entrada">Outras Entradas / Saldo Extra</td>
             <td class="entrada"><input type="number" id="outras_entradas" value="0.00" step="0.01" oninput="calcular()"></td>
         </tr>
-
-        <!-- SAÍDAS - VERMELHO / PRETO -->
         <tr>
             <td class="saida">Cartões (parcelado + assinaturas)</td>
             <td class="saida"><input type="number" id="cartoes" value="452.33" step="0.01" oninput="calcular()"></td>
@@ -79,7 +82,6 @@
             <td class="saida">Gastos Não Previstos / Dívidas Extras</td>
             <td class="saida"><input type="number" id="gastos_extras" value="0.00" step="0.01" oninput="calcular()"></td>
         </tr>
-
         <tr class="total">
             <td>Total de Saídas</td>
             <td id="total_saidas">R$ 0,00</td>
@@ -102,9 +104,38 @@
 
 <script>
 let grafico;
+const CHAVE_SALVAMENTO = 'planejamento_financeiro_patrick';
+
+// Carregar valores salvos ao abrir
+function carregarValores() {
+    const salvos = localStorage.getItem(CHAVE_SALVAMENTO);
+    if (salvos) {
+        const dados = JSON.parse(salvos);
+        Object.keys(dados).forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) campo.value = dados[id];
+        });
+    }
+    calcular();
+}
+
+// Salvar valores automaticamente
+function salvarValores() {
+    const dados = {
+        salario: document.getElementById('salario').value,
+        outras_entradas: document.getElementById('outras_entradas').value,
+        cartoes: document.getElementById('cartoes').value,
+        parcela_carro: document.getElementById('parcela_carro').value,
+        seguro: document.getElementById('seguro').value,
+        contas: document.getElementById('contas').value,
+        gasolina: document.getElementById('gasolina').value,
+        lazer: document.getElementById('lazer').value,
+        gastos_extras: document.getElementById('gastos_extras').value
+    };
+    localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(dados));
+}
 
 function calcular() {
-    // Pegar valores
     const salario = parseFloat(document.getElementById('salario').value) || 0;
     const outras_entradas = parseFloat(document.getElementById('outras_entradas').value) || 0;
     const cartoes = parseFloat(document.getElementById('cartoes').value) || 0;
@@ -116,13 +147,11 @@ function calcular() {
     const gastos_extras = parseFloat(document.getElementById('gastos_extras').value) || 0;
     const valor_devolver = 7000;
 
-    // Cálculos
     const total_entradas = salario + outras_entradas;
     const total_saidas = cartoes + parcela_carro + seguro + contas + gasolina + lazer + gastos_extras;
     const sobra = total_entradas - total_saidas;
     const prazo = sobra > 0 ? Math.ceil(valor_devolver / sobra) : 'Indefinido';
 
-    // Exibir resultados
     document.getElementById('total_saidas').textContent = `R$ ${total_saidas.toFixed(2).replace('.', ',')}`;
     
     const el_sobra = document.getElementById('valor_sobra');
@@ -131,15 +160,13 @@ function calcular() {
 
     document.getElementById('prazo_meses').textContent = prazo;
 
-    // Atualizar gráfico
     atualizarGrafico(total_entradas, total_saidas);
+    salvarValores(); // Salva a cada alteração
 }
 
 function atualizarGrafico(entrada, saida) {
     const ctx = document.getElementById('grafico').getContext('2d');
-    
     if (grafico) grafico.destroy();
-
     grafico = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -151,16 +178,11 @@ function atualizarGrafico(entrada, saida) {
                 borderRadius: 8
             }]
         },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-        }
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 }
 
-// Executar ao abrir
-window.onload = calcular;
+window.onload = carregarValores;
 </script>
 
 </body>
